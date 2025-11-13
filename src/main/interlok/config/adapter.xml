@@ -1,0 +1,95 @@
+<adapter>
+  <unique-id>elastic-testing</unique-id>
+  <start-up-event-imp>com.adaptris.core.event.StandardAdapterStartUpEvent</start-up-event-imp>
+  <heartbeat-event-imp>com.adaptris.core.HeartbeatEvent</heartbeat-event-imp>
+  <shared-components>
+    <connections>
+        <jetty-http-connection>
+            <unique-id>jetty-conn</unique-id>
+            <port>8081</port>
+            <server-connector-properties/>
+            <http-configuration/>
+        </jetty-http-connection>
+      <aws-kinesis-sdk-connection>
+        <unique-id>aws-kinesis-sdk-connection</unique-id>
+          <credentials class="aws2-static-credentials-builder">
+              <authentication class="aws2-keys-authentication">
+                  <access-key>test</access-key>
+                  <secret-key>test</secret-key>
+              </authentication>
+          </credentials>
+        <custom-endpoint class="aws2-custom-endpoint">
+            <service-endpoint>http://localstack-1:4566/_aws</service-endpoint>
+            <signing-region>us-east-1</signing-region>
+        </custom-endpoint>
+        <client-configuration>
+
+        </client-configuration>
+      </aws-kinesis-sdk-connection>
+    </connections>
+    <services/>
+  </shared-components>
+  <event-handler class="default-event-handler">
+    <unique-id>DefaultEventHandler</unique-id>
+    <connection class="null-connection">
+      <unique-id>agitated-einstein</unique-id>
+    </connection>
+    <producer class="null-message-producer">
+      <unique-id>romantic-bartik</unique-id>
+    </producer>
+  </event-handler>
+  <message-error-handler class="null-processing-exception-handler">
+    <unique-id>silly-dijkstra</unique-id>
+  </message-error-handler>
+  <failed-message-retrier class="no-retries">
+    <unique-id>jolly-ptolemy</unique-id>
+  </failed-message-retrier>
+  <channel-list>
+    <channel>
+      <consume-connection class="shared-connection">
+        <lookup-name>jetty-conn</lookup-name>
+      </consume-connection>
+      <workflow-list>
+          <!-- Kinesis -->
+        <standard-workflow>
+            <consumer class="jetty-message-consumer">
+                <unique-id>jetty-consumer-aws2-kinesis</unique-id>
+                <path>${api.path.aws2.kinesis}/*</path>
+                <parameter-handler class="jetty-http-parameters-as-metadata"/>
+                <header-handler class="jetty-http-ignore-headers"/>
+                <message-factory class="default-message-factory">
+                    <default-char-encoding>UTF-8</default-char-encoding>
+                </message-factory>
+            </consumer>
+          <service-collection class="service-list">
+            <unique-id>eager-albattani</unique-id>
+            <services>
+                <standalone-producer>
+                    <unique-id>standard-http</unique-id>
+                    <connection class="shared-connection">
+                        <lookup-name>aws-kinesis-sdk-connection</lookup-name>
+                    </connection>
+                    <producer class="aws-kinesis-sdk-stream-producer">
+                        <unique-id>aws-kinesis-sdk-stream-producer</unique-id>
+                        <stream>%message{stream}</stream>
+                        <partition-key>%message{partition}</partition-key>
+                        <request-builder class="aws-kinesis-splitting-request-builder">
+                            <message-splitter class="xpath-message-splitter">
+                                <xpath>//message</xpath>
+                            </message-splitter>
+                        </request-builder>
+                    </producer>
+                </standalone-producer>
+            </services>
+          </service-collection>
+          <unique-id>kinesis-workflow</unique-id>
+        </standard-workflow>
+      </workflow-list>
+      <unique-id>aws-channel</unique-id>
+    </channel>
+  </channel-list>
+  <message-error-digester class="standard-message-error-digester">
+    <unique-id>ErrorDigest</unique-id>
+    <digest-max-size>100</digest-max-size>
+  </message-error-digester>
+</adapter>
